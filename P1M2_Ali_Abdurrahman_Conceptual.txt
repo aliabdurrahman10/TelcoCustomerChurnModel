@@ -1,0 +1,82 @@
+1. Jelaskan latar belakang adanya bagging dan cara kerja bagging !
+2. Jelaskan perbedaan cara kerja algoritma Random Forest dengan algoritma boosting yang Anda pilih !
+3. Jelaskan apa yang dimaksud dengan Cross Validation !
+
+Jawab:
+
+1. Latar belakang bagging dan cara kerjanya
+
+Latar belakang (mengapa ada bagging):
+- Model “bervariasi tinggi” (high variance) seperti decision tree mudah berubah jika data latih sedikit bergeser → prediksi tidak stabil/overfit.
+- Bagging (bootstrap aggregating) mengurangi varians dengan membuat banyak model dari sampel data yang diacak ulang lalu digabung (dirata‑ratakan atau di‑vote).
+- Intuisi statistik: jika tiap model punya varian σ² dan korelasi antar model ≈ ρ, varian rata‑rata T model kira‑kira ≈ ρσ² + (1−ρ)σ²/T → makin kecil saat T besar dan/atau korelasi rendah.
+
+Cara kerja (langkah-langkah):
+1. Dari data latih ukuran N, bentuk T bootstrap samples (tiap sampel ukuran N, dipilih dengan pengembalian/with replacement).
+2. Latih T model dasar (umumnya decision tree), masing‑masing pada data bootstrap-nya.
+3. Agregasi prediksi:
+   - Klasifikasi: mayoritas suara (atau rata‑rata probabilitas).
+   - Regresi: rata‑rata nilai prediksi.
+4. Out‑of‑Bag (OOB) estimate: titik data yang tidak masuk ke sebuah bootstrap (≈36% peluang) dipakai sebagai validasi internal untuk mengukur akurasi tanpa hold‑out terpisah.
+
+Hasil: bias relatif mirip model dasar, tetapi varians turun tajam → generalisasi lebih baik.
+
+
+2. Perbedaan Random Forest vs algoritma boosting (dipilih: Gradient Boosting/GBDT)
+
+Garis besar:
+- Random Forest (RF) = bagging + fitur acak di tiap split pohon → tujuan utama menurunkan varians.
+- Gradient Boosting (GBDT) = boosting berurutan; menambah pohon kecil satu per satu untuk memperbaiki kesalahan residu model sebelumnya → tujuan utama menurunkan bias (perlu regulasi agar tidak overfit).
+
+Perbedaan kunci:
+- Skema ensemble: RF paralel/independen; GBDT berurutan (tiap pohon memperbaiki residu).
+- Randomisasi: RF pakai bootstrap + subset fitur acak per split (max_features); GBDT biasanya tanpa randomisasi eksplisit, fokus pada gradien loss.
+- Ukuran pohon: RF sering memakai pohon dalam/fully grown; GBDT memakai pohon dangkal (weak learners).
+- Agregasi: RF voting/rata‑rata; GBDT penjumlahan bertahap dengan learning rate.
+- Tujuan utama: RF → turunkan varians; GBDT → turunkan bias (sensitif hiperparameter).
+- Kecepatan latih: RF mudah diparalelkan; GBDT sulit diparalelkan penuh (sifat sekuensial).
+- Tuning penting: 
+  - RF: n_estimators, max_features, max_depth, OOB.
+  - GBDT: n_estimators, learning_rate, max_depth, subsample, regularisasi, early stopping.
+- Perilaku pada noise/outlier: RF cukup robust; GBDT bisa tertarik ke outlier (perlu regulasi/subsample).
+- Interpretabilitas: RF bisa pakai importance (impurity/permutation); GBDT sering dibantu SHAP untuk efek bertahap/interaksi.
+
+Ringkas: RF = “banyak pohon besar, acak, dirata‑ratakan”; GBDT = “banyak pohon kecil, ditambah pelan‑pelan untuk memperbaiki kesalahan”.
+
+Tabel Perbedaan:
+
+| Aspek                  | **Random Forest**                               | **Boosting (contoh: XGBoost)**                        |
+|------------------------|------------------------------------------------ |-------------------------------------------------------|
+| **Tipe Ensemble**      | Bagging                                         | Boosting                                              |
+| **Pembangunan Model**  | Semua pohon dilatih **secara paralel**          | Pohon dilatih **secara berurutan**                    |
+| **Tujuan Utama**       | Mengurangi variance                             | Mengurangi bias (dan variance)                        |
+| **Data Latih per-Pohon | Bootstrap sample acak                           | Tiap model fokus pada **error** model sebelumnya      |
+| **Bobot Data**         | Sama untuk semua sampel awal                    | Bobot dinaikkan untuk data yang salah diprediksi      |
+| **Kelebihan**          | Lebih tahan noise, mudah diparalelkan           | Bias rendah, akurasi tinggi jika tuning tepat         |
+| **Kekurangan**         | Kadang bias tetap tinggi                        | Rentan overfitting jika terlalu banyak iterasi        |
+
+
+3. Apa itu Cross‑Validation (CV)
+
+Definisi:
+- Teknik resampling untuk mengestimasi performa generalisasi model (dan memilih hiperparameter) dengan membagi data latih menjadi beberapa lipatan (folds), melatih pada sebagian lipatan, menguji pada lipatan sisanya, diulang bergiliran, lalu dirata‑ratakan skornya.
+
+Contoh umum – k‑Fold CV:
+1. Bagi data menjadi k lipatan berukuran serupa.
+2. Untuk i = 1..k: latih model pada semua lipatan kecuali lipatan ke‑i, uji pada lipatan ke‑i.
+3. Ambil rata‑rata (dan simpangan baku) metrik → estimasi performa lebih stabil daripada satu train/test split.
+
+Variasi penting:
+- Stratified k‑Fold: mempertahankan proporsi kelas (penting untuk klasifikasi tak seimbang).
+- Leave‑One‑Out (LOOCV): k = N; sangat akurat tetapi mahal komputasi.
+- Repeated k‑Fold: mengulang beberapa kali dengan pembagian berbeda untuk stabilitas.
+- Time‑Series CV (rolling/expanding window): tidak mengacak waktu; latih pada masa lalu, uji pada masa depan (hindari leakage).
+- Nested CV: CV luar untuk evaluasi akhir, CV dalam untuk tuning hiperparameter → menghindari bias seleksi.
+
+Praktik baik:
+- Lakukan semua langkah praproses (scaling, imputasi, seleksi fitur) di dalam tiap fold agar tidak terjadi data leakage.
+
+Ringkasan satu kalimat:
+- Bagging menurunkan varians dengan melatih banyak model pada bootstrap dan mengagregasi hasil;
+  Random Forest adalah bagging + fitur acak; Boosting (GBDT) membangun model berurutan yang fokus memperbaiki kesalahan; 
+  Cross‑Validation adalah cara menilai performa dan tuning model lewat pembagian data menjadi beberapa lipatan uji/latih.

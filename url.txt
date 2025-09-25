@@ -1,0 +1,3 @@
+link website:
+[Dataset - Kaggle: Telco Customer Churn](https://www.kaggle.com/blastchar/telco-customer-churn)
+deployment: https://telcocustomerchurnnn.streamlit.app/
